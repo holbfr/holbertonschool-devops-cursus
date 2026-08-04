@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  backend1:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    ports:
+      - 5001:5001
+    networks:
+      - application-network
+  backend2:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    ports:
+      - 5002:5002
+    networks:
+      - application-network
+  lb:
+    image: nginx:alpine
+    ports:
+      - 8080:8080
+    volumes:
+    # Tell Docker to mount a file or from my PC into the container.
+    # ./nginx.conf : is the source file
+    #  /etc/nginx/nginx.conf : is the destination
+    # ro : is the mode - for read only mode.
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro 
+    depends_on:
+      - backend1
+      - backend2
+    networks:
+      - application-network
+
+networks:
+  application-network:
+    driver: bridge
