@@ -5,22 +5,18 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
-    ports:
-      - 5001:5001
     networks:
       - application-network
   backend2:
     build:
       context: backend
       dockerfile: Dockerfile
-    ports:
-      - 5002:5002
     networks:
       - application-network
   lb:
     image: nginx:alpine
     ports:
-      - 8080:8080
+      - 8080:80
     volumes:
     # Tell Docker to mount a file or from my PC into the container.
     # ./nginx.conf : is the source file
