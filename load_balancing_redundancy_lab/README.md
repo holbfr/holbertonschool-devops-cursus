@@ -85,7 +85,7 @@ By the end of this project, learners will be able to:
 
 ---
 
-# Quick Rule of Thumb
+##### Quick Rule of Thumb
 
 - ✅ **Choose L4** if you need **high performance** and only need to distribute TCP/UDP connections.
 - ✅ **Choose L7** if you need **intelligent routing** based on HTTP/HTTPS request content.
@@ -117,6 +117,8 @@ More resources:
   - Cache responses to improve performance.
 
 > **Difference:** A **proxy** represents the **client**, while a **reverse proxy** represents the **servers**.
+
+![proxy_vs_reverse_proxy image](proxy_vs_reverse_proxy.png)
 
 ---
 
