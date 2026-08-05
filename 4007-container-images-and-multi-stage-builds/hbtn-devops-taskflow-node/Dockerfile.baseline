@@ -1,0 +1,48 @@
+# =============================================================================
+# INTENTIONALLY BAD. DO NOT COPY THIS INTO ANYTHING REAL.
+#
+# This file exists so that "Container Images & Multi-stage Builds" Task 1 has a
+# concrete, measurable starting point. Every line below is a real mistake that
+# ships in real production images, and the whole project is about removing them
+# one at a time:
+#
+#   FROM node:20      a mutable tag (the publisher can move it under you) and
+#                     the *full* Debian image: compilers, headers, git, python,
+#                     roughly a gigabyte before a single line of app code
+#
+#   COPY . .          copies the entire build context — the host node_modules
+#                     built for the wrong OS, .git history, editor files,
+#                     anything a stray .env happened to contain — into a layer
+#                     before anything is installed, so every source edit
+#                     invalidates the dependency install that follows
+#
+#   npm install       resolves fresh instead of obeying package-lock.json, and
+#                     pulls devDependencies (eslint, prettier, jest, supertest)
+#                     into an image that will never lint or test anything
+#
+#   no USER           the process runs as root inside the container
+#
+#   no .dockerignore  nothing filters the context in the first place — writing
+#                     that file is Task 2
+#
+# Build it, measure it, then read `docker history` and work out which line paid
+# for which megabytes:
+#
+#   docker build -f Dockerfile.baseline -t taskflow-api:baseline .
+#   docker images taskflow-api:baseline
+#   docker history taskflow-api:baseline
+# =============================================================================
+
+FROM node:20
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install
+
+ENV NODE_ENV=development
+
+EXPOSE 3000
+
+CMD ["node", "src/server.js"]

@@ -1,0 +1,85 @@
+# =============================================================================
+# Baseline single-instance stack: one database, one application.
+#
+# This is the starting point, not the destination:
+#   - "Docker Compose Foundations" has you rewrite this file from scratch,
+#     adding networks, a named volume, an .env and a reverse proxy.
+#   - "Load Balancing & Resilience Lab" has you extend it into app-1 / app-2 /
+#     app-3 behind an nginx load balancer, and remove the published app port.
+#
+# As shipped it must simply work:
+#
+#   docker compose up -d --wait
+#   curl -s http://localhost:3000/health | jq .
+#   curl -s http://localhost:3000/items  | jq .
+#   docker compose down -v
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: taskflow_dev
+      POSTGRES_DB: taskflow
+    volumes:
+      # Named volume: the data outlives the container. `down` keeps it,
+      # `down -v` destroys it and the init scripts run again on the next start.
+      - pgdata:/var/lib/postgresql/data
+      # The official image runs every script it finds here, in filename order,
+      # and only when the data directory is empty. Hence the 01-/02- prefixes.
+      - ./db:/docker-entrypoint-initdb.d:ro
+    # Deliberately no `ports:` — nothing outside the stack needs SQL access, and
+    # every published port is attack surface.
+    healthcheck:
+      # Postgres's own readiness tool. The doubled $$ escapes Compose's
+      # interpolation so the container's shell expands the variables at probe
+      # time instead of Compose expanding them at parse time.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # The application reads its whole database connection from these.
+      # PGHOST is the *service name*: Compose's DNS resolves it on the shared
+      # network. Never localhost (that is the app container itself), never an IP.
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: taskflow
+      PGPASSWORD: taskflow_dev
+      PGDATABASE: taskflow
+      NODE_ENV: production
+    ports:
+      # Temporary, and the first thing both follow-up projects remove: once a
+      # proxy or load balancer is the entry point, this would let traffic
+      # bypass it.
+      - "3000:3000"
+    depends_on:
+      db:
+        # Start order is not readiness. The long form waits for the db's own
+        # healthcheck to pass before this container is even created.
+        condition: service_healthy
+    healthcheck:
+      # The runtime image is alpine-based: no curl, no wget. It has node.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', r => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  pgdata:

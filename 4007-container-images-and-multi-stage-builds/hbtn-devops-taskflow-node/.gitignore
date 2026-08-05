@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Local configuration and secrets — never commit real credentials.
+# Commit a .env.example with placeholder values instead.
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test and coverage output
+coverage/
+.nyc_output/
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+
+# NOTE: there is deliberately no .dockerignore in this repository.
+# Writing one is Task 2 of the "Container Images & Multi-stage Builds" project.

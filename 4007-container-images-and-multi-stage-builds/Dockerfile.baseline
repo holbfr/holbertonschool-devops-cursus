@@ -1,0 +1,1 @@
+FROM dockeranay2310/taskflow-server:v1.0
